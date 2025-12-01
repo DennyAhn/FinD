@@ -89,12 +89,26 @@ async def fetch_company_balance_sheets(
                 .first()
             )
 
+            # 원시 값 추출
+            total_assets_val = item.get("totalAssets")
+            total_current_assets_val = item.get("totalCurrentAssets")
+            total_liab_val = item.get("totalLiabilities")
+            total_current_liab_val = item.get("totalCurrentLiabilities")
+            total_noncurrent_liab_val = item.get("totalNonCurrentLiabilities")
+            total_equity_val = item.get("totalShareholderEquity")
+            # [보정] 자본이 비어 있으면 자산-부채로 추정
+            if total_equity_val is None and total_assets_val is not None and total_liab_val is not None:
+                total_equity_val = total_assets_val - total_liab_val
+
             if existing:
                 # 기존 레코드 업데이트
                 existing.report_year = _extract_year(item.get("calendarYear"), datetime.combine(report_date, datetime.min.time()))
-                existing.total_assets = item.get("totalAssets")
-                existing.total_liabilities = item.get("totalLiabilities")
-                existing.total_equity = item.get("totalShareholderEquity")
+                existing.total_assets = total_assets_val
+                existing.total_current_assets = total_current_assets_val
+                existing.total_liabilities = total_liab_val
+                existing.total_current_liabilities = total_current_liab_val
+                existing.total_noncurrent_liabilities = total_noncurrent_liab_val
+                existing.total_equity = total_equity_val
                 existing.cash_and_short_term_investments = item.get("cashAndShortTermInvestments") or item.get("cashAndCashEquivalents")
                 existing.inventory = item.get("inventory")
                 existing.accounts_receivable = item.get("netReceivables")
@@ -108,9 +122,12 @@ async def fetch_company_balance_sheets(
                     period=normalized_period,
                     report_date=report_date,
                     report_year=_extract_year(item.get("calendarYear"), datetime.combine(report_date, datetime.min.time())),
-                    total_assets=item.get("totalAssets"),
-                    total_liabilities=item.get("totalLiabilities"),
-                    total_equity=item.get("totalShareholderEquity"),
+                    total_assets=total_assets_val,
+                    total_current_assets=total_current_assets_val,
+                    total_liabilities=total_liab_val,
+                    total_current_liabilities=total_current_liab_val,
+                    total_noncurrent_liabilities=total_noncurrent_liab_val,
+                    total_equity=total_equity_val,
                     cash_and_short_term_investments=item.get("cashAndShortTermInvestments")
                     or item.get("cashAndCashEquivalents"),
                     inventory=item.get("inventory"),
@@ -137,8 +154,11 @@ async def fetch_company_balance_sheets(
             "report_date": record.report_date.isoformat(),
             "report_year": record.report_year,
             "total_assets": record.total_assets,
+            "total_current_assets": record.total_current_assets,
             "total_liabilities": record.total_liabilities,
             "total_equity": record.total_equity,
+            "total_current_liabilities": record.total_current_liabilities,
+            "total_noncurrent_liabilities": record.total_noncurrent_liabilities,
             "cash_and_short_term_investments": record.cash_and_short_term_investments,
             "inventory": record.inventory,
             "accounts_receivable": record.accounts_receivable,

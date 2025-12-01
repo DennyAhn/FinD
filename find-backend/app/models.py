@@ -99,7 +99,11 @@ class CompanyBalanceSheet(Base):
     report_date = Column(Date, nullable=False)
     report_year = Column(Integer, nullable=False)
     total_assets = Column(BIGINT)
+    total_current_assets = Column(BIGINT)
     total_liabilities = Column(BIGINT)
+    # 세부 부채 구조
+    total_current_liabilities = Column(BIGINT)
+    total_noncurrent_liabilities = Column(BIGINT)
     total_equity = Column(BIGINT)
     cash_and_short_term_investments = Column(BIGINT)
     inventory = Column(BIGINT)

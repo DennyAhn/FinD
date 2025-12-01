@@ -18,6 +18,10 @@ async def fetch_insider_trades(
 ) -> list:
     """
     특정 티커(ticker)의 최신 내부자 거래 내역을 조회합니다.
+
+    - FMP API에서 데이터를 가져와 DB에 적재한 뒤,
+    - DB에서 **최근 3개월(90일)** 이내의 거래만 필터링하여 반환합니다.
+    - 동일 티커에 대해서는 24시간 동안 API를 다시 호출하지 않습니다 (캐시).
     """
     cache_key = f"insider_trades_{ticker}"
     now = datetime.utcnow()
@@ -62,9 +66,15 @@ async def fetch_insider_trades(
             db.rollback()
             print(f"fetch_insider_trades 에러: {e}")
 
+    # --- 최종 조회: 최근 3개월(90일) 내 거래만 사용 ---
+    three_months_ago = now - timedelta(days=90)
+
     final_trades = (
         db.query(models.InsiderTrade)
-        .filter_by(ticker=ticker)
+        .filter(
+            models.InsiderTrade.ticker == ticker,
+            models.InsiderTrade.transaction_date >= three_months_ago,
+        )
         .order_by(models.InsiderTrade.transaction_date.desc())
         .limit(limit)
         .all()
